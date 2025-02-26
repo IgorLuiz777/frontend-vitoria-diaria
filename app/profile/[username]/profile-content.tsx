@@ -149,12 +149,12 @@ export default function ProfileContent({ params }: { params: { username: string 
       <header className="bg-white/80 backdrop-blur-md border-b border-primary/20">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-20">
-            <Link
+            <Link 
               href="/"
               className="flex items-center gap-2 text-primary hover:opacity-80 transition-opacity"
             >
               <Heart className="h-6 w-6" />
-              <span className="text-xl font-bold">Vitória Diária</span>
+              <span className="text-xl font-bold">Vida Nova</span>
             </Link>
           </div>
         </div>

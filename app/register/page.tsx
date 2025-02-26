@@ -5,12 +5,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Heart, User, AtSign, MapPin, Calendar, ArrowRight, ArrowLeft, KeyRound, ImagePlus } from 'lucide-react';
+import { Heart, User, AtSign, MapPin, Calendar, ArrowRight, ArrowLeft, KeyRound, ImagePlus, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
+import { useSupabaseAuth } from '@/hooks/use-supabase';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 const registerSchema = z.object({
   step1: z.object({
@@ -23,6 +26,7 @@ const registerSchema = z.object({
       message: 'Você deve ter pelo menos 18 anos',
     }),
     city: z.string().min(2, 'Cidade é obrigatória'),
+    email: z.string().email('E-mail inválido'),
     password: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres'),
   }),
   step2: z.object({
@@ -35,6 +39,9 @@ type RegisterForm = z.infer<typeof registerSchema>;
 
 export default function Register() {
   const [step, setStep] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+  const { signUp } = useSupabaseAuth();
+  const router = useRouter();
 
   const form = useForm<RegisterForm>({
     resolver: zodResolver(registerSchema),
@@ -44,6 +51,7 @@ export default function Register() {
         username: '',
         age: '',
         city: '',
+        email: '',
         password: '',
       },
       step2: {
@@ -53,14 +61,44 @@ export default function Register() {
     },
   });
 
-  const onSubmit = (data: RegisterForm) => {
+  const onSubmit = async (data: RegisterForm) => {
     if (step === 1) {
       setStep(2);
       return;
     }
-
-    console.log(data);
-    // Implementar lógica de cadastro aqui
+    
+    setIsLoading(true);
+    try {
+      const { error } = await signUp(
+        data.step1.email, 
+        data.step1.password, 
+        {
+          name: data.step1.name,
+          username: data.step1.username,
+          age: data.step1.age,
+          city: data.step1.city,
+          bio: data.step2.bio || '',
+          image_url: data.step2.image || ''
+        }
+      );
+      
+      if (error) {
+        toast.error('Erro ao criar conta', {
+          description: error.message
+        });
+        return;
+      }
+      
+      toast.success('Conta criada com sucesso!', {
+        description: 'Você já pode fazer login com suas credenciais.'
+      });
+      router.push('/login');
+    } catch (error) {
+      console.error('Registration error:', error);
+      toast.error('Erro ao criar conta');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -68,18 +106,18 @@ export default function Register() {
       <Card className="w-full max-w-md bg-card/80 backdrop-blur border-primary/20">
         <CardHeader className="space-y-4">
           <div className="flex justify-center">
-            <Link
+            <Link 
               href="/"
               className="flex items-center gap-2 text-primary hover:opacity-80 transition-opacity"
             >
               <Heart className="h-8 w-8" />
-              <span className="text-2xl font-bold">Vitória Diária</span>
+              <span className="text-2xl font-bold">Vida Nova</span>
             </Link>
           </div>
           <div className="text-center">
             <CardTitle className="text-2xl">Criar Conta</CardTitle>
             <CardDescription>
-              {step === 1
+              {step === 1 
                 ? 'Preencha seus dados principais para começar'
                 : 'Personalize seu perfil (opcional)'
               }
@@ -102,6 +140,20 @@ export default function Register() {
                             <User className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
                             <Input placeholder="João Silva" className="pl-10" {...field} />
                           </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="step1.email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>E-mail</FormLabel>
+                        <FormControl>
+                          <Input type="email" placeholder="seu@email.com" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -195,9 +247,10 @@ export default function Register() {
                       <FormItem>
                         <FormLabel>Bio</FormLabel>
                         <FormControl>
-                          <Textarea
+                          <Textarea 
                             placeholder="Conte um pouco sobre você..."
                             className="resize-none"
+                            disabled={isLoading}
                             {...field}
                           />
                         </FormControl>
@@ -218,10 +271,11 @@ export default function Register() {
                         <FormControl>
                           <div className="relative">
                             <ImagePlus className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-                            <Input
-                              type="url"
-                              placeholder="URL da sua foto"
+                            <Input 
+                              type="url" 
+                              placeholder="URL da sua foto" 
                               className="pl-10"
+                              disabled={isLoading}
                               {...field}
                             />
                           </div>
@@ -240,12 +294,24 @@ export default function Register() {
                       variant="outline"
                       className="flex-1"
                       onClick={() => setStep(1)}
+                      disabled={isLoading}
                     >
                       <ArrowLeft className="mr-2 h-4 w-4" />
                       Voltar
                     </Button>
-                    <Button type="submit" className="flex-1 bg-primary hover:bg-primary/90">
-                      Finalizar Cadastro
+                    <Button 
+                      type="submit" 
+                      className="flex-1 bg-primary hover:bg-primary/90"
+                      disabled={isLoading}
+                    >
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Processando...
+                        </>
+                      ) : (
+                        'Finalizar Cadastro'
+                      )}
                     </Button>
                   </div>
                 </>

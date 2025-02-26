@@ -4,11 +4,15 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Heart, KeyRound, Mail } from 'lucide-react';
+import { Heart, KeyRound, Mail, Loader2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
+import { useSupabaseAuth } from '@/hooks/use-supabase';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 const loginSchema = z.object({
   email: z.string().email('E-mail inválido'),
@@ -18,6 +22,10 @@ const loginSchema = z.object({
 type LoginForm = z.infer<typeof loginSchema>;
 
 export default function Login() {
+  const [isLoading, setIsLoading] = useState(false);
+  const { signIn } = useSupabaseAuth();
+  const router = useRouter();
+
   const form = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -26,9 +34,26 @@ export default function Login() {
     },
   });
 
-  const onSubmit = (data: LoginForm) => {
-    console.log(data);
-    // Implementar lógica de login aqui
+  const onSubmit = async (data: LoginForm) => {
+    setIsLoading(true);
+    try {
+      const { error } = await signIn(data.email, data.password);
+      
+      if (error) {
+        toast.error('Erro ao fazer login', {
+          description: error.message
+        });
+        return;
+      }
+      
+      toast.success('Login realizado com sucesso!');
+      router.push('/dashboard');
+    } catch (error) {
+      console.error('Login error:', error);
+      toast.error('Erro ao fazer login');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -36,12 +61,12 @@ export default function Login() {
       <Card className="w-full max-w-md bg-card/80 backdrop-blur border-primary/20">
         <CardHeader className="space-y-4">
           <div className="flex justify-center">
-            <Link
+            <Link 
               href="/"
               className="flex items-center gap-2 text-primary hover:opacity-80 transition-opacity"
             >
               <Heart className="h-8 w-8" />
-              <span className="text-2xl font-bold">Vitória Diária</span>
+              <span className="text-2xl font-bold">Vida Nova</span>
             </Link>
           </div>
           <div className="text-center">
@@ -66,6 +91,7 @@ export default function Login() {
                         <Input
                           placeholder="seu@email.com"
                           className="pl-10"
+                          disabled={isLoading}
                           {...field}
                         />
                       </div>
@@ -88,6 +114,7 @@ export default function Login() {
                           type="password"
                           placeholder="••••••"
                           className="pl-10"
+                          disabled={isLoading}
                           {...field}
                         />
                       </div>
@@ -98,10 +125,21 @@ export default function Login() {
               />
 
               <div className="space-y-4">
-                <Button type="submit" className="w-full bg-primary hover:bg-primary/90">
-                  Entrar
+                <Button 
+                  type="submit" 
+                  className="w-full bg-primary hover:bg-primary/90"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Entrando...
+                    </>
+                  ) : (
+                    'Entrar'
+                  )}
                 </Button>
-
+                
                 <div className="text-center space-y-2">
                   <p className="text-sm text-muted-foreground">
                     Ainda não tem uma conta?{' '}
