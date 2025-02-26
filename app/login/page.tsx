@@ -36,12 +36,12 @@ export default function Login() {
       <Card className="w-full max-w-md bg-card/80 backdrop-blur border-primary/20">
         <CardHeader className="space-y-4">
           <div className="flex justify-center">
-            <Link 
+            <Link
               href="/"
               className="flex items-center gap-2 text-primary hover:opacity-80 transition-opacity"
             >
               <Heart className="h-8 w-8" />
-              <span className="text-2xl font-bold">Vida Nova</span>
+              <span className="text-2xl font-bold">Vitória Diária</span>
             </Link>
           </div>
           <div className="text-center">
@@ -101,7 +101,7 @@ export default function Login() {
                 <Button type="submit" className="w-full bg-primary hover:bg-primary/90">
                   Entrar
                 </Button>
-                
+
                 <div className="text-center space-y-2">
                   <p className="text-sm text-muted-foreground">
                     Ainda não tem uma conta?{' '}

@@ -58,7 +58,7 @@ export default function Register() {
       setStep(2);
       return;
     }
-    
+
     console.log(data);
     // Implementar lógica de cadastro aqui
   };
@@ -68,18 +68,18 @@ export default function Register() {
       <Card className="w-full max-w-md bg-card/80 backdrop-blur border-primary/20">
         <CardHeader className="space-y-4">
           <div className="flex justify-center">
-            <Link 
+            <Link
               href="/"
               className="flex items-center gap-2 text-primary hover:opacity-80 transition-opacity"
             >
               <Heart className="h-8 w-8" />
-              <span className="text-2xl font-bold">Vida Nova</span>
+              <span className="text-2xl font-bold">Vitória Diária</span>
             </Link>
           </div>
           <div className="text-center">
             <CardTitle className="text-2xl">Criar Conta</CardTitle>
             <CardDescription>
-              {step === 1 
+              {step === 1
                 ? 'Preencha seus dados principais para começar'
                 : 'Personalize seu perfil (opcional)'
               }
@@ -195,7 +195,7 @@ export default function Register() {
                       <FormItem>
                         <FormLabel>Bio</FormLabel>
                         <FormControl>
-                          <Textarea 
+                          <Textarea
                             placeholder="Conte um pouco sobre você..."
                             className="resize-none"
                             {...field}
@@ -218,9 +218,9 @@ export default function Register() {
                         <FormControl>
                           <div className="relative">
                             <ImagePlus className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-                            <Input 
-                              type="url" 
-                              placeholder="URL da sua foto" 
+                            <Input
+                              type="url"
+                              placeholder="URL da sua foto"
                               className="pl-10"
                               {...field}
                             />

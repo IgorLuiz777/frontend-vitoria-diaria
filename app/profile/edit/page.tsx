@@ -86,12 +86,12 @@ export default function EditProfile() {
       <header className="bg-white/80 backdrop-blur-md border-b border-primary/20">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-20">
-            <Link 
+            <Link
               href="/"
               className="flex items-center gap-2 text-primary hover:opacity-80 transition-opacity"
             >
               <Heart className="h-6 w-6" />
-              <span className="text-xl font-bold">Vida Nova</span>
+              <span className="text-xl font-bold">Vitória Diária</span>
             </Link>
           </div>
         </div>
@@ -190,7 +190,7 @@ export default function EditProfile() {
                         <FormItem>
                           <FormLabel>Bio</FormLabel>
                           <FormControl>
-                            <Textarea 
+                            <Textarea
                               placeholder="Conte um pouco sobre você..."
                               className="resize-none"
                               {...field}
@@ -213,9 +213,9 @@ export default function EditProfile() {
                           <FormControl>
                             <div className="relative">
                               <ImagePlus className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-                              <Input 
-                                type="url" 
-                                placeholder="URL da sua foto" 
+                              <Input
+                                type="url"
+                                placeholder="URL da sua foto"
                                 className="pl-10"
                                 {...field}
                               />
