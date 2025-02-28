@@ -40,7 +40,7 @@ export default function Home() {
           <div className="flex items-center justify-between h-20">
             <div className="flex items-center gap-2">
               <Heart className="h-6 w-6 text-primary" />
-              <span className="text-xl font-bold text-primary">Vida Nova</span>
+              <span className="text-xl font-bold text-primary">Vitória Diária</span>
             </div>
 
             {/* Desktop Menu */}
@@ -137,7 +137,7 @@ export default function Home() {
       <main className="min-h-screen bg-gradient-to-b from-background via-secondary/50 to-primary/10 pt-20">
         <div className="container mx-auto px-4 py-8">
           <div id="inicio" className="mb-8 text-center">
-            <h1 className="text-4xl font-bold mb-4 text-primary">Vida Nova</h1>
+            <h1 className="text-4xl font-bold mb-4 text-primary">Vitória Diária</h1>
             <p className="text-muted-foreground text-lg">
               Transforme seus vícios em conquistas e seja recompensado por isso
             </p>

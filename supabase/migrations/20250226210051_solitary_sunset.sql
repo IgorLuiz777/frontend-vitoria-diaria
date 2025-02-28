@@ -1,5 +1,5 @@
 /*
-  # Initial Schema Setup for Vida Nova App
+  # Initial Schema Setup for Vitória Diária App
 
   1. New Tables
     - `users`
@@ -11,7 +11,7 @@
       - `bio` (text, optional user description)
       - `image_url` (text, optional profile image)
       - `created_at` (timestamp)
-    
+
     - `addictions`
       - `id` (uuid, primary key)
       - `user_id` (uuid, foreign key to users)
@@ -25,7 +25,7 @@
       - `saved` (numeric, money saved)
       - `visible` (boolean, profile visibility)
       - `created_at` (timestamp)
-    
+
     - `supports`
       - `id` (uuid, primary key)
       - `user_id` (uuid, foreign key to users)
@@ -35,7 +35,7 @@
       - `amount` (numeric, support amount)
       - `hide_amount` (boolean, visibility of amount)
       - `created_at` (timestamp)
-  
+
   2. Security
     - Enable RLS on all tables
     - Add policies for authenticated users to manage their own data

@@ -19,14 +19,18 @@ export function useUsers() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const [profileError, setProfileError] = useState(false);
 
   const fetchProfile = async () => {
     try {
       setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+      if (userError) throw userError;
 
       if (!user) {
         setProfile(null);
+        setProfileError(true);
         return;
       }
 
@@ -39,8 +43,42 @@ export function useUsers() {
       if (error) throw error;
 
       setProfile(data);
+      console.log(data);
     } catch (err) {
       console.error('Error fetching profile:', err);
+      setError(err as Error);
+      setProfileError(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateProfile = async (profileData: Partial<Profile>, addictionVisibility: Record<string, boolean>) => {
+    try {
+      setLoading(true);
+
+      const { data: profileDataResponse, error: profileError } = await supabase
+        .from('users')
+        .update(profileData)
+        .eq('id', profileData.id);
+
+      if (profileError) throw profileError;
+
+      const addictionUpdates = Object.entries(addictionVisibility).map(([id, visible]) =>
+        supabase
+          .from('addictions')
+          .update({ visible })
+          .eq('id', id)
+      );
+
+      await Promise.all(addictionUpdates);
+
+      if (profileDataResponse) {
+        setProfile(profileDataResponse[0]);
+        console.log('Profile and addiction visibility updated:', profileDataResponse[0]);
+      }
+    } catch (err) {
+      console.error('Error updating profile:', err);
       setError(err as Error);
     } finally {
       setLoading(false);
@@ -51,13 +89,14 @@ export function useUsers() {
     fetchProfile();
   }, []);
 
-  return { profile, loading, error, fetchProfile };
+  return { profile, loading, error, fetchProfile, profileError, updateProfile };
 }
 
 export function usePublicProfile(username: string) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const [profileError, setProfileError] = useState(false);
 
   useEffect(() => {
     const fetchPublicProfile = async () => {
@@ -70,9 +109,15 @@ export function usePublicProfile(username: string) {
           .eq('username', username)
           .single();
 
-        if (error) throw error;
-
-        setProfile(data);
+        if (error) {
+          if (error.code === 'PGRST116') {
+            setProfileError(true);
+          } else {
+            throw error;
+          }
+        } else {
+          setProfile(data);
+        }
       } catch (err) {
         console.error('Error fetching public profile:', err);
         setError(err as Error);
@@ -86,5 +131,5 @@ export function usePublicProfile(username: string) {
     }
   }, [username]);
 
-  return { profile, loading, error };
+  return { profile, loading, error, profileError };
 }

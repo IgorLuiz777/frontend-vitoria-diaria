@@ -120,7 +120,7 @@ export default function ProfileContent({ params }: ProfileContentProps) {
     });
   };
 
-  if (profileLoading || addictionsLoading || supportsLoading) {
+  if (profileLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -152,11 +152,11 @@ export default function ProfileContent({ params }: ProfileContentProps) {
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-20">
             <Link
-              href="/"
+              href={user ? '/dashboard' : "/"}
               className="flex items-center gap-2 text-primary hover:opacity-80 transition-opacity"
             >
               <Heart className="h-6 w-6" />
-              <span className="text-xl font-bold">Vida Nova</span>
+              <span className="text-xl font-bold">Vitória Diária</span>
             </Link>
             {user && user.id === profile.id && (
               <Link href="/profile/edit">
@@ -206,12 +206,12 @@ export default function ProfileContent({ params }: ProfileContentProps) {
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                   <DialogTrigger asChild>
                     <Button className="w-full bg-primary hover:bg-primary/90">
-                      Apoiar Meta
+                      Apoiar
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="sm:max-w-[425px]">
                     <DialogHeader>
-                      <DialogTitle>Apoiar Meta</DialogTitle>
+                      <DialogTitle>Apoiar</DialogTitle>
                       <DialogDescription>
                         Ajude {profile.name} a alcançar seus objetivos com uma mensagem de apoio e uma contribuição.
                       </DialogDescription>

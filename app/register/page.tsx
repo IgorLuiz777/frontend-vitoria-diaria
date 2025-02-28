@@ -66,12 +66,12 @@ export default function Register() {
       setStep(2);
       return;
     }
-    
+
     setIsLoading(true);
     try {
       const { error } = await signUp(
-        data.step1.email, 
-        data.step1.password, 
+        data.step1.email,
+        data.step1.password,
         {
           name: data.step1.name,
           username: data.step1.username,
@@ -81,14 +81,14 @@ export default function Register() {
           image_url: data.step2.image || ''
         }
       );
-      
+
       if (error) {
         toast.error('Erro ao criar conta', {
           description: error.message
         });
         return;
       }
-      
+
       toast.success('Conta criada com sucesso!', {
         description: 'Você já pode fazer login com suas credenciais.'
       });
@@ -106,18 +106,18 @@ export default function Register() {
       <Card className="w-full max-w-md bg-card/80 backdrop-blur border-primary/20">
         <CardHeader className="space-y-4">
           <div className="flex justify-center">
-            <Link 
+            <Link
               href="/"
               className="flex items-center gap-2 text-primary hover:opacity-80 transition-opacity"
             >
               <Heart className="h-8 w-8" />
-              <span className="text-2xl font-bold">Vida Nova</span>
+              <span className="text-2xl font-bold">Vitória Diária</span>
             </Link>
           </div>
           <div className="text-center">
             <CardTitle className="text-2xl">Criar Conta</CardTitle>
             <CardDescription>
-              {step === 1 
+              {step === 1
                 ? 'Preencha seus dados principais para começar'
                 : 'Personalize seu perfil (opcional)'
               }
@@ -247,7 +247,7 @@ export default function Register() {
                       <FormItem>
                         <FormLabel>Bio</FormLabel>
                         <FormControl>
-                          <Textarea 
+                          <Textarea
                             placeholder="Conte um pouco sobre você..."
                             className="resize-none"
                             disabled={isLoading}
@@ -271,9 +271,9 @@ export default function Register() {
                         <FormControl>
                           <div className="relative">
                             <ImagePlus className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-                            <Input 
-                              type="url" 
-                              placeholder="URL da sua foto" 
+                            <Input
+                              type="url"
+                              placeholder="URL da sua foto"
                               className="pl-10"
                               disabled={isLoading}
                               {...field}
@@ -299,8 +299,8 @@ export default function Register() {
                       <ArrowLeft className="mr-2 h-4 w-4" />
                       Voltar
                     </Button>
-                    <Button 
-                      type="submit" 
+                    <Button
+                      type="submit"
                       className="flex-1 bg-primary hover:bg-primary/90"
                       disabled={isLoading}
                     >

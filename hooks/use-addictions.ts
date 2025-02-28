@@ -124,6 +124,8 @@ export function useAddictions() {
       console.error('Error creating addiction:', err);
       toast.error('Erro ao criar controle');
       return null;
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -204,6 +206,8 @@ export function useAddictions() {
       console.error('Error performing check-in:', err);
       toast.error('Erro ao realizar check-in');
       return false;
+    } finally {
+      setLoading(false);
     }
   };
 

@@ -107,11 +107,11 @@ export default function Dashboard() {
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-20">
             <Link
-              href="/"
+              href={user ? '/dashboard' : "/"}
               className="flex items-center gap-2 text-primary hover:opacity-80 transition-opacity"
             >
               <Heart className="h-6 w-6" />
-              <span className="text-xl font-bold">Vida Nova</span>
+              <span className="text-xl font-bold">Vitória Diária</span>
             </Link>
             <div className="flex items-center gap-4">
               <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

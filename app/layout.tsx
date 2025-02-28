@@ -6,7 +6,7 @@ import { Toaster } from '@/components/ui/sonner';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Vida Nova - Transforme seus vícios em conquistas',
+  title: 'Vitória Diária - Transforme seus vícios em conquistas',
   description: 'Controle seus vícios, acompanhe seu progresso e seja recompensado por suas conquistas.',
 };
 

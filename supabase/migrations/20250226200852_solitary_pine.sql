@@ -1,5 +1,5 @@
 /*
-  # Initial Schema Setup for Vida Nova App
+  # Initial Schema Setup for Vitória Diária App
 
   1. New Tables
     - `users`
