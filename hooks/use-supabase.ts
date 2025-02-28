@@ -41,11 +41,11 @@ export function useSupabaseAuth() {
         // Disable email confirmatio
       }
     });
-    
+
     if (!error && data.user) {
       // Create profile entry
       const { error: profileError } = await supabase
-        .from('profiles')
+        .from('users')
         .insert({
           id: data.user.id,
           username: userData.username,
@@ -55,12 +55,12 @@ export function useSupabaseAuth() {
           age: parseInt(userData.age),
           image_url: userData.image_url || ''
         });
-      
+
       if (profileError) {
         console.error('Error creating profile:', profileError);
       }
     }
-    
+
     return { data, error };
   };
 
@@ -97,23 +97,23 @@ export function useProfile(userId?: string) {
           setLoading(false);
           return;
         }
-        
+
         const { data, error } = await supabase
-          .from('profiles')
+          .from('users')
           .select('*')
           .eq('id', user.id)
           .single();
-        
+
         setProfile(data);
         setError(error);
         setLoading(false);
       } else {
         const { data, error } = await supabase
-          .from('profiles')
+          .from('users')
           .select('*')
           .eq('id', userId)
           .single();
-        
+
         setProfile(data);
         setError(error);
         setLoading(false);
@@ -139,12 +139,12 @@ export function useAddictions(userId?: string) {
           setLoading(false);
           return;
         }
-        
+
         const { data, error } = await supabase
           .from('addictions')
           .select('*, check_ins(*)')
           .eq('user_id', user.id);
-        
+
         setAddictions(data || []);
         setError(error);
         setLoading(false);
@@ -154,7 +154,7 @@ export function useAddictions(userId?: string) {
           .select('*, check_ins(*)')
           .eq('user_id', userId)
           .eq('visible', true);
-        
+
         setAddictions(data || []);
         setError(error);
         setLoading(false);

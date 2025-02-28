@@ -10,13 +10,18 @@ import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
-import { Beer, Calendar, Cigarette, Coffee, DollarSign, Flame, Heart, Loader2, Trophy } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Beer, Calendar, Cigarette, Coffee, DollarSign, Flame, Heart, Loader2, Trophy, Ban, ShoppingBag, Smartphone, Gamepad, Candy } from 'lucide-react';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { usePublicProfile } from '@/hooks/use-users';
+import { usePublicAddictions } from '@/hooks/use-addictions';
+import { usePublicSupports, useSupports, SupportFormData } from '@/hooks/use-supports';
+import { useSupabaseAuth } from '@/hooks/use-supabase';
 
 const supportSchema = z.object({
   message: z.string()
@@ -30,32 +35,29 @@ const supportSchema = z.object({
     .refine((val) => !isNaN(Number(val)) && Number(val) >= 1, {
       message: 'Valor mínimo de R$ 1,00',
     }),
+  addictionId: z.string().optional(),
   supporterName: z.string().optional(),
   hideAmount: z.boolean().default(false),
 });
 
 type SupportForm = z.infer<typeof supportSchema>;
 
-interface Achievement {
-  name: string;
-  description: string;
-  icon: React.ReactNode;
-  date: string;
+interface ProfileContentProps {
+  params: {
+    username: string;
+  }
 }
 
-interface Addiction {
-  id: string;
-  name: string;
-  icon: React.ReactNode;
-  daysClean: number;
-  totalDays: number;
-  progress: number;
-  moneySaved: number;
-}
-
-export default function ProfileContent({ params }: { params: { username: string } }) {
+export default function ProfileContent({ params }: ProfileContentProps) {
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
+  const { user } = useSupabaseAuth();
+
+  const { profile, loading: profileLoading } = usePublicProfile(params.username);
+  const { addictions, loading: addictionsLoading } = usePublicAddictions(profile?.id || '');
+  const { supports, loading: supportsLoading, fetchPublicSupports } = usePublicSupports(profile?.id || '');
+  const { createSupport } = useSupports();
 
   const form = useForm<SupportForm>({
     resolver: zodResolver(supportSchema),
@@ -63,99 +65,104 @@ export default function ProfileContent({ params }: { params: { username: string 
       message: '',
       duration: '30',
       amount: '',
+      addictionId: undefined,
       supporterName: '',
       hideAmount: false,
     },
   });
 
+  useEffect(() => {
+    if (profile?.id) {
+      fetchPublicSupports();
+    }
+  }, [profile?.id]);
+
   const onSubmit = async (data: SupportForm) => {
+    if (!profile) return;
+
     setIsSubmitting(true);
     try {
-      // Simular processamento
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      console.log(data);
-      // Aqui você redirecionaria para a página de pagamento
-      router.push('/payment');
-    } catch (error) {
-      console.error(error);
+      await createSupport(profile.id, data as SupportFormData);
+      form.reset();
+      setIsDialogOpen(false);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const user = {
-    name: 'João Silva',
-    username: params.username,
-    bio: 'Em busca de uma vida mais saudável. Cada dia é uma nova conquista! 💪',
-    location: 'São Paulo, SP',
-    memberSince: 'Março 2024',
-    photoUrl: 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=400&h=400&q=80',
+  const getIconComponent = (iconName: string) => {
+    switch (iconName) {
+      case 'Cigarette': return <Cigarette className="h-5 w-5" />;
+      case 'Beer': return <Beer className="h-5 w-5" />;
+      case 'Coffee': return <Coffee className="h-5 w-5" />;
+      case 'ShoppingBag': return <ShoppingBag className="h-5 w-5" />;
+      case 'Smartphone': return <Smartphone className="h-5 w-5" />;
+      case 'Gamepad': return <Gamepad className="h-5 w-5" />;
+      case 'Candy': return <Candy className="h-5 w-5" />;
+      default: return <Ban className="h-5 w-5" />;
+    }
   };
 
-  const addictions: Addiction[] = [
-    {
-      id: 'smoking',
-      name: 'Cigarro',
-      icon: <Cigarette className="h-5 w-5" />,
-      daysClean: 45,
-      totalDays: 60,
-      progress: 75,
-      moneySaved: 450,
-    },
-    {
-      id: 'alcohol',
-      name: 'Álcool',
-      icon: <Beer className="h-5 w-5" />,
-      daysClean: 30,
-      totalDays: 30,
-      progress: 100,
-      moneySaved: 800,
-    },
-    {
-      id: 'caffeine',
-      name: 'Cafeína',
-      icon: <Coffee className="h-5 w-5" />,
-      daysClean: 15,
-      totalDays: 30,
-      progress: 50,
-      moneySaved: 200,
-    },
-  ];
-
-  const achievements: Achievement[] = [
-    {
-      name: 'Primeiro Mês Completo',
-      description: '30 dias sem álcool',
-      icon: <Trophy className="h-5 w-5 text-primary" />,
-      date: '15/03/2024',
-    },
-    {
-      name: 'Economia Notável',
-      description: 'Economizou R$ 1.000 em vícios',
-      icon: <Trophy className="h-5 w-5 text-primary" />,
-      date: '10/03/2024',
-    },
-  ];
-
-  const formatCurrency = (value: number) => {
+  const formatCurrency = (value: number | null) => {
+    if (value === null) return '?????';
     return value.toLocaleString('pt-BR', {
       style: 'currency',
       currency: 'BRL',
     });
   };
 
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  };
+
+  if (profileLoading || addictionsLoading || supportsLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center">
+        <Ban className="h-16 w-16 text-primary mb-4" />
+        <h2 className="text-2xl font-bold mb-2">Perfil não encontrado</h2>
+        <p className="text-muted-foreground mb-6">
+          O usuário @{params.username} não existe ou foi removido.
+        </p>
+        <Button
+          onClick={() => router.push('/')}
+          className="bg-primary hover:bg-primary/90"
+        >
+          Voltar para a página inicial
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-secondary/50 to-primary/10">
       <header className="bg-white/80 backdrop-blur-md border-b border-primary/20">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-20">
-            <Link 
+            <Link
               href="/"
               className="flex items-center gap-2 text-primary hover:opacity-80 transition-opacity"
             >
               <Heart className="h-6 w-6" />
               <span className="text-xl font-bold">Vida Nova</span>
             </Link>
+            {user && user.id === profile.id && (
+              <Link href="/profile/edit">
+                <Button variant="outline">Editar Perfil</Button>
+              </Link>
+            )}
           </div>
         </div>
       </header>
@@ -168,27 +175,35 @@ export default function ProfileContent({ params }: { params: { username: string 
               <CardHeader>
                 <div className="flex flex-col items-center space-y-4">
                   <Avatar className="h-32 w-32">
-                    <img src={user.photoUrl} alt={user.name} className="object-cover" />
+                    {profile.image_url ? (
+                      <img src={profile.image_url} alt={profile.name} className="object-cover" />
+                    ) : (
+                      <div className="h-32 w-32 rounded-full bg-primary/20 flex items-center justify-center">
+                        <span className="text-4xl font-bold text-primary">
+                          {profile.name.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                    )}
                   </Avatar>
                   <div className="text-center">
-                    <h2 className="text-2xl font-bold">{user.name}</h2>
-                    <p className="text-muted-foreground">@{user.username}</p>
+                    <h2 className="text-2xl font-bold">{profile.name}</h2>
+                    <p className="text-muted-foreground">@{profile.username}</p>
                   </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                <p className="text-center text-muted-foreground">{user.bio}</p>
+                <p className="text-center text-muted-foreground">{profile.bio || 'Sem biografia'}</p>
                 <div className="flex flex-col gap-2 text-sm text-muted-foreground">
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4" />
-                    <span>Membro desde {user.memberSince}</span>
+                    <span>Membro desde {formatDate(profile.created_at)}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Flame className="h-4 w-4" />
-                    <span>{user.location}</span>
+                    <span>{profile.city} • {profile.age} anos</span>
                   </div>
                 </div>
-                <Dialog>
+                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                   <DialogTrigger asChild>
                     <Button className="w-full bg-primary hover:bg-primary/90">
                       Apoiar Meta
@@ -198,7 +213,7 @@ export default function ProfileContent({ params }: { params: { username: string 
                     <DialogHeader>
                       <DialogTitle>Apoiar Meta</DialogTitle>
                       <DialogDescription>
-                        Ajude {user.name} a alcançar seus objetivos com uma mensagem de apoio e uma contribuição.
+                        Ajude {profile.name} a alcançar seus objetivos com uma mensagem de apoio e uma contribuição.
                       </DialogDescription>
                     </DialogHeader>
                     <Form {...form}>
@@ -215,7 +230,7 @@ export default function ProfileContent({ params }: { params: { username: string 
                                   className="resize-none"
                                   {...field}
                                 />
-                              </FormControl>
+                              </FormControl >
                               <FormDescription>
                                 {field.value.length}/280 caracteres
                               </FormDescription>
@@ -223,6 +238,42 @@ export default function ProfileContent({ params }: { params: { username: string 
                             </FormItem>
                           )}
                         />
+
+                        {addictions.length > 0 && (
+                          <FormField
+                            control={form.control}
+                            name="addictionId"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Apoiar controle específico (opcional)</FormLabel>
+                                <Select
+                                  onValueChange={field.onChange}
+                                  defaultValue={field.value}
+                                >
+                                  <FormControl>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Selecione um controle" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    {addictions.map(addiction => (
+                                      <SelectItem key={addiction.id} value={addiction.id}>
+                                        <div className="flex items-center gap-2">
+                                          {getIconComponent(addiction.icon)}
+                                          <span>{addiction.name}</span>
+                                        </div>
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                <FormDescription>
+                                  Deixe em branco para apoiar todos os controles
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        )}
 
                         <FormField
                           control={form.control}
@@ -323,7 +374,7 @@ export default function ProfileContent({ params }: { params: { username: string 
                               Processando...
                             </>
                           ) : (
-                            'Continuar para Pagamento'
+                            'Enviar Apoio'
                           )}
                         </Button>
                       </form>
@@ -333,32 +384,52 @@ export default function ProfileContent({ params }: { params: { username: string 
               </CardContent>
             </Card>
 
-            {/* Achievements */}
+            {/* Supports */}
             <Card className="bg-card/80 backdrop-blur border-primary/20">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Trophy className="h-5 w-5 text-primary" />
-                  Conquistas Recentes
+                  Apoios Recebidos
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {achievements.map((achievement, index) => (
-                  <div
-                    key={index}
-                    className="flex items-start gap-4 p-3 rounded-lg bg-secondary/50"
-                  >
-                    {achievement.icon}
-                    <div className="flex-1">
-                      <p className="font-medium">{achievement.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {achievement.description}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {achievement.date}
-                      </p>
-                    </div>
+                {supports.length === 0 ? (
+                  <div className="text-center py-4">
+                    <p className="text-muted-foreground">Nenhum apoio recebido ainda</p>
                   </div>
-                ))}
+                ) : (
+                  supports.slice(0, 3).map((support, index) => (
+                    <div
+                      key={support.id}
+                      className="flex items-start gap-4 p-3 rounded-lg bg-secondary/50"
+                    >
+                      <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center text-primary">
+                        {support.supporter_name ? support.supporter_name.charAt(0).toUpperCase() : '?'}
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-medium">
+                          {support.supporter_name || 'Apoiador anônimo'}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {support.message}
+                        </p>
+                        <div className="flex justify-between mt-2">
+                          <p className="text-xs text-muted-foreground">
+                            {formatDate(support.created_at)}
+                          </p>
+                          <p className="text-xs font-medium text-primary">
+                            {formatCurrency(support.amount)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+                {supports.length > 3 && (
+                  <Button variant="outline" className="w-full">
+                    Ver todos os {supports.length} apoios
+                  </Button>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -372,8 +443,16 @@ export default function ProfileContent({ params }: { params: { username: string 
                   <Flame className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">45 dias</div>
-                  <p className="text-xs text-muted-foreground">Sem cigarro</p>
+                  <div className="text-2xl font-bold">
+                    {addictions.length > 0
+                      ? Math.max(...addictions.map(a => a.streak))
+                      : 0} dias
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {addictions.length > 0
+                      ? addictions.reduce((max, curr) => curr.streak > max.streak ? curr : max, addictions[0]).name
+                      : 'Nenhum controle'}
+                  </p>
                 </CardContent>
               </Card>
               <Card className="bg-card/80 backdrop-blur border-primary/20">
@@ -383,9 +462,9 @@ export default function ProfileContent({ params }: { params: { username: string 
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
-                    {formatCurrency(addictions.reduce((acc, curr) => acc + curr.moneySaved, 0))}
+                    {formatCurrency(addictions.reduce((acc, curr) => acc + curr.saved, 0))}
                   </div>
-                  <p className="text-xs text-muted-foreground">Em todos os vícios</p>
+                  <p className="text-xs text-muted-foreground">Em todos os controles</p>
                 </CardContent>
               </Card>
               <Card className="bg-card/80 backdrop-blur border-primary/20">
@@ -401,33 +480,45 @@ export default function ProfileContent({ params }: { params: { username: string 
             </div>
 
             <div className="space-y-6">
-              {addictions.map((addiction) => (
-                <Card key={addiction.id} className="bg-card/80 backdrop-blur border-primary/20">
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="flex items-center gap-2">
-                        {addiction.icon}
-                        <span>{addiction.name}</span>
-                      </CardTitle>
-                      <Badge variant="secondary" className="bg-primary/10 text-primary">
-                        {addiction.daysClean} dias limpo
-                      </Badge>
-                    </div>
-                    <CardDescription>
-                      Meta: {addiction.totalDays} dias sem {addiction.name.toLowerCase()}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <Progress value={addiction.progress} className="h-2 bg-primary/20" />
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Progresso: {addiction.progress}%</span>
-                      <span className="text-muted-foreground">
-                        Economia: {formatCurrency(addiction.moneySaved)}
-                      </span>
-                    </div>
+              {addictions.length === 0 ? (
+                <Card className="bg-card/80 backdrop-blur border-primary/20">
+                  <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                    <Ban className="h-16 w-16 text-primary/50 mb-4" />
+                    <h3 className="text-xl font-bold mb-2">Nenhum controle visível</h3>
+                    <p className="text-muted-foreground max-w-md">
+                      {profile.name} ainda não cadastrou nenhum controle ou optou por mantê-los privados.
+                    </p>
                   </CardContent>
                 </Card>
-              ))}
+              ) : (
+                addictions.map((addiction) => (
+                  <Card key={addiction.id} className="bg-card/80 backdrop-blur border-primary/20">
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="flex items-center gap-2">
+                          {getIconComponent(addiction.icon)}
+                          <span>{addiction.name}</span>
+                        </CardTitle>
+                        <Badge variant="secondary" className="bg-primary/10 text-primary">
+                          {addiction.streak} dias limpo
+                        </Badge>
+                      </div>
+                      <CardDescription>
+                        Meta: {addiction.goal_days} dias sem {addiction.name.toLowerCase()}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <Progress value={addiction.progress} className="h-2 bg-primary/20" />
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Progresso: {addiction.progress}%</span>
+                        <span className="text-muted-foreground">
+                          Economia: {formatCurrency(addiction.saved)}
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
             </div>
           </div>
         </div>

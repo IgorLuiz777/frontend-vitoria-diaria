@@ -1,41 +1,15 @@
-/*
-  # Create addictions tracking tables
-
-  1. New Tables
-    - `addictions`
-      - `id` (uuid, primary key)
-      - `user_id` (uuid, references profiles.id)
-      - `name` (text)
-      - `icon` (text)
-      - `daily_cost` (numeric)
-      - `goal_days` (integer)
-      - `start_date` (timestamp)
-      - `visible` (boolean)
-      - `created_at` (timestamp)
-      - `updated_at` (timestamp)
-
-    - `check_ins`
-      - `id` (uuid, primary key)
-      - `addiction_id` (uuid, references addictions.id)
-      - `user_id` (uuid, references profiles.id)
-      - `date` (date)
-      - `created_at` (timestamp)
-
-  2. Security
-    - Enable RLS on both tables
-    - Add policies for authenticated users to manage their own data
-    - Add policy for public read access to visible addictions
-*/
-
 -- Create addictions table
 CREATE TABLE IF NOT EXISTS addictions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES profiles(id),
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   icon TEXT NOT NULL,
   daily_cost NUMERIC(10,2) NOT NULL,
   goal_days INTEGER NOT NULL,
-  start_date TIMESTAMPTZ DEFAULT now(),
+  check_ins INTEGER DEFAULT 0,
+  streak INTEGER DEFAULT 0,
+  progress INTEGER DEFAULT 0,
+  saved NUMERIC(10,2) DEFAULT 0,
   visible BOOLEAN DEFAULT true,
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
@@ -44,8 +18,8 @@ CREATE TABLE IF NOT EXISTS addictions (
 -- Create check_ins table
 CREATE TABLE IF NOT EXISTS check_ins (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  addiction_id UUID NOT NULL REFERENCES addictions(id),
-  user_id UUID NOT NULL REFERENCES profiles(id),
+  addiction_id UUID NOT NULL REFERENCES addictions(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   date DATE NOT NULL DEFAULT CURRENT_DATE,
   created_at TIMESTAMPTZ DEFAULT now(),
   UNIQUE(addiction_id, date)
@@ -56,12 +30,6 @@ ALTER TABLE addictions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE check_ins ENABLE ROW LEVEL SECURITY;
 
 -- Create policies for addictions
-CREATE POLICY "Users can read own addictions"
-  ON addictions
-  FOR SELECT
-  TO authenticated
-  USING (user_id = auth.uid());
-
 CREATE POLICY "Public can read visible addictions"
   ON addictions
   FOR SELECT

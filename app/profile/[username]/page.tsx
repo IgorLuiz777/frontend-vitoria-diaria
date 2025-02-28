@@ -1,17 +1,26 @@
-import ProfileContent from './profile-content';
+"use client";
 
-// This is a Server Component that handles static generation
-export default function Profile({ params }: { params: { username: string } }) {
-  return <ProfileContent params={params} />;
+import { Loader } from 'lucide-react';
+import ProfileContent from './profile-content';
+import { useEffect, useState } from 'react';
+interface ProfileProps {
+  params: Promise<{ username: string }>;
 }
 
-export function generateStaticParams() {
-  // In a real app, this would come from your database
-  // For now, we'll pre-render a few example usernames
-  return [
-    { username: 'username' },
-    { username: 'joao.silva' },
-    { username: 'maria.santos' },
-    { username: 'pedro.oliveira' }
-  ];
+export default function Profile({ params }: ProfileProps) {
+  const [resolvedParams, setResolvedParams] = useState<{ username: string } | null>(null);
+
+  useEffect(() => {
+    params.then(data => setResolvedParams(data));
+  }, [params]);
+
+  if (!resolvedParams) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader className="animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  return <ProfileContent params={resolvedParams} />;
 }

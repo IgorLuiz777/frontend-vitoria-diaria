@@ -14,7 +14,7 @@
       - `hide_amount` (boolean)
       - `completed` (boolean)
       - `created_at` (timestamp)
-  
+
   2. Security
     - Enable RLS on supports table
     - Add policies for authenticated users to manage their own data
@@ -57,7 +57,7 @@ CREATE POLICY "Public can read non-hidden supports"
   FOR SELECT
   TO anon
   USING (
-    (hide_amount = false) OR 
+    (hide_amount = false) OR
     (hide_amount = true AND completed = true)
   );
 
