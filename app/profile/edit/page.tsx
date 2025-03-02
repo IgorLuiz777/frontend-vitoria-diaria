@@ -30,6 +30,7 @@ const profileSchema = z.object({
   bio: z.string().max(500, 'Bio deve ter no máximo 500 caracteres').optional(),
   image: z.string().optional(),
   addictionVisibility: z.record(z.boolean()),
+  goalVisibility: z.record(z.boolean()),
 });
 
 type ProfileForm = z.infer<typeof profileSchema>;
@@ -101,9 +102,13 @@ export default function EditProfile() {
           ...acc,
           [addiction.id]: addiction.visible,
         }), {}),
+        goalVisibility: goals.reduce((acc, goal) => ({
+          ...acc,
+          [goal.id]: goal.visible,
+        }), {}),
       });
     }
-  }, [profile, addictions, form]);
+  }, [profile, addictions, goals, form]);
 
   if (loading || !profile) {
     return (
