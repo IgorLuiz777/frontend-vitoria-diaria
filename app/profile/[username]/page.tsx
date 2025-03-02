@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import ProfileContent from './profile-content';
 import { useEffect, useState } from 'react';
 interface ProfileProps {
@@ -16,8 +16,8 @@ export default function Profile({ params }: ProfileProps) {
 
   if (!resolvedParams) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <Loader className="animate-spin text-primary" />
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }

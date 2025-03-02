@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { User } from '@supabase/supabase-js';
+import { toast } from 'sonner';
 
 export function useSupabaseAuth() {
   const [user, setUser] = useState<User | null>(null);
@@ -57,7 +58,7 @@ export function useSupabaseAuth() {
         });
 
       if (profileError) {
-        console.error('Error creating profile:', profileError);
+        toast.error('Falha ao criar o perfil!');
       }
     }
 

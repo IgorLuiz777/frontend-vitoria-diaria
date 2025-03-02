@@ -46,7 +46,6 @@ export function useSupports() {
       toast.success('Apoio enviado com sucesso!');
       return data;
     } catch (err) {
-      console.error('Error creating support:', err);
       toast.error('Erro ao enviar apoio');
       return null;
     } finally {
@@ -89,7 +88,6 @@ export function useUserSupports() {
 
       setSupports(data || []);
     } catch (err) {
-      console.error('Error fetching received supports:', err);
       setError(err as Error);
     } finally {
       setLoading(false);
@@ -120,7 +118,6 @@ export function useUserSupports() {
 
       setSupports(data || []);
     } catch (err) {
-      console.error('Error fetching sent supports:', err);
       setError(err as Error);
     } finally {
       setLoading(false);
@@ -173,7 +170,6 @@ export function usePublicSupports(userId: string) {
 
       setSupports(filteredData || []);
     } catch (err) {
-      console.error('Error fetching public supports:', err);
       setError(err as Error);
     } finally {
       setLoading(false);

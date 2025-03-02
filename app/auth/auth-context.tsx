@@ -32,13 +32,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         data: { session },
         error,
       } = await supabase.auth.getSession();
-      
+
       if (error) {
-        console.error(error);
         setIsLoading(false);
         return;
       }
-      
+
       setSession(session);
       setUser(session?.user ?? null);
       setIsLoading(false);
@@ -63,7 +62,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       email,
       password,
     });
-    
+
     return { data, error };
   };
 
@@ -72,7 +71,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       email,
       password,
     });
-    
+
     return { data, error };
   };
 

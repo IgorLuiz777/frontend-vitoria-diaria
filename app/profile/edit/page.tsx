@@ -7,11 +7,17 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { Heart, User, AtSign, MapPin, Calendar, ImagePlus, Eye, EyeOff, Cigarette, Beer, Coffee } from 'lucide-react';
+import { Heart, User, AtSign, MapPin, Calendar, ImagePlus, Eye, EyeOff, Cigarette, Beer, Coffee, ShoppingBag, Smartphone, Gamepad, Candy, Ban, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useUsers } from '@/hooks/use-users';
+import { useAddictions } from '@/hooks/use-addictions';
+import { useGoals } from '@/hooks/use-goals';
+import { useEffect } from 'react';
+import { toast } from 'sonner';
+import { useSupabaseAuth } from '@/hooks/use-supabase';
 
 const profileSchema = z.object({
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
@@ -19,9 +25,7 @@ const profileSchema = z.object({
     .min(3, 'Username deve ter pelo menos 3 caracteres')
     .max(30, 'Username deve ter no máximo 30 caracteres')
     .regex(/^[a-z0-9._]+$/, 'Username deve conter apenas letras minúsculas, números, ponto e underscore'),
-  age: z.string().refine((val) => !isNaN(Number(val)) && Number(val) >= 18, {
-    message: 'Você deve ter pelo menos 18 anos',
-  }),
+  age: z.number(),
   city: z.string().min(2, 'Cidade é obrigatória'),
   bio: z.string().max(500, 'Bio deve ter no máximo 500 caracteres').optional(),
   image: z.string().optional(),
@@ -38,60 +42,88 @@ interface Addiction {
 }
 
 export default function EditProfile() {
-  // Simulated user data - In a real app, this would come from your backend
-  const addictions: Addiction[] = [
-    {
-      id: 'smoking',
-      name: 'Cigarro',
-      icon: <Cigarette className="h-5 w-5" />,
-      visible: true,
-    },
-    {
-      id: 'alcohol',
-      name: 'Álcool',
-      icon: <Beer className="h-5 w-5" />,
-      visible: true,
-    },
-    {
-      id: 'caffeine',
-      name: 'Cafeína',
-      icon: <Coffee className="h-5 w-5" />,
-      visible: false,
-    },
-  ];
+  const { user } = useSupabaseAuth()
+  const { profile, loading, fetchProfile, updateProfile } = useUsers();
+  const { addictions } = useAddictions();
+  const { goals, toggleGoalVisibility } = useGoals();
+
+  const getIconComponent = (iconName: string) => {
+    switch (iconName) {
+      case 'Cigarette': return <Cigarette className="h-5 w-5" />;
+      case 'Beer': return <Beer className="h-5 w-5" />;
+      case 'Coffee': return <Coffee className="h-5 w-5" />;
+      case 'ShoppingBag': return <ShoppingBag className="h-5 w-5" />;
+      case 'Smartphone': return <Smartphone className="h-5 w-5" />;
+      case 'Gamepad': return <Gamepad className="h-5 w-5" />;
+      case 'Candy': return <Candy className="h-5 w-5" />;
+      default: return <Ban className="h-5 w-5" />;
+    }
+  };
 
   const form = useForm<ProfileForm>({
     resolver: zodResolver(profileSchema),
-    defaultValues: {
-      name: 'João Silva',
-      username: 'joao.silva',
-      age: '25',
-      city: 'São Paulo',
-      bio: 'Em busca de uma vida mais saudável. Cada dia é uma nova conquista! 💪',
-      image: 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=400&h=400&q=80',
-      addictionVisibility: addictions.reduce((acc, addiction) => ({
-        ...acc,
-        [addiction.id]: addiction.visible,
-      }), {}),
-    },
+    mode: 'onBlur'
   });
 
-  const onSubmit = (data: ProfileForm) => {
-    console.log(data);
-    // Implementar lógica de atualização do perfil aqui
+  const onSubmit = async (data: ProfileForm) => {
+    try {
+      if (profile) {
+        await updateProfile({
+          id: profile.id,
+          name: data.name,
+          username: data.username,
+          age: data.age,
+          city: data.city,
+          bio: data.bio,
+          image_url: data.image,
+        }, data.addictionVisibility);
+      }
+      toast.success('Perfil atualizado!');
+    } catch {
+      toast.error('Falha para atualizar o perfil!');
+    }
   };
+
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+
+  useEffect(() => {
+    if (profile) {
+      form.reset({
+        name: profile.name || '',
+        username: profile.username || '',
+        age: profile.age || 0,
+        city: profile.city || '',
+        bio: profile.bio || '',
+        image: profile.image_url || '',
+        addictionVisibility: addictions.reduce((acc, addiction) => ({
+          ...acc,
+          [addiction.id]: addiction.visible,
+        }), {}),
+      });
+    }
+  }, [profile, addictions, form]);
+
+  if (loading || !profile) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-secondary/50 to-primary/10">
       <header className="bg-white/80 backdrop-blur-md border-b border-primary/20">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-20">
-            <Link 
-              href="/"
+            <Link
+              href={user ? '/dashboard' : "/"}
               className="flex items-center gap-2 text-primary hover:opacity-80 transition-opacity"
             >
               <Heart className="h-6 w-6" />
-              <span className="text-xl font-bold">Vida Nova</span>
+              <span className="text-xl font-bold">Vitória Diária</span>
             </Link>
           </div>
         </div>
@@ -190,7 +222,7 @@ export default function EditProfile() {
                         <FormItem>
                           <FormLabel>Bio</FormLabel>
                           <FormControl>
-                            <Textarea 
+                            <Textarea
                               placeholder="Conte um pouco sobre você..."
                               className="resize-none"
                               {...field}
@@ -213,9 +245,9 @@ export default function EditProfile() {
                           <FormControl>
                             <div className="relative">
                               <ImagePlus className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-                              <Input 
-                                type="url" 
-                                placeholder="URL da sua foto" 
+                              <Input
+                                type="url"
+                                placeholder="URL da sua foto"
                                 className="pl-10"
                                 {...field}
                               />
@@ -247,7 +279,7 @@ export default function EditProfile() {
                           render={({ field }) => (
                             <FormItem className="flex items-center justify-between rounded-lg border p-4">
                               <div className="flex items-center space-x-3">
-                                {addiction.icon}
+                                {getIconComponent(addiction.icon)}
                                 <div className="space-y-0.5">
                                   <FormLabel className="text-base">
                                     {addiction.name}
@@ -271,6 +303,53 @@ export default function EditProfile() {
                                 <Switch
                                   checked={field.value}
                                   onCheckedChange={field.onChange}
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  <Separator className="my-6" />
+
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium">Visibilidade das Metas</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Escolha quais metas ficarão visíveis em seu perfil público
+                    </p>
+
+                    <div className="space-y-4">
+                      {goals.map((goal) => (
+                        <FormField
+                          key={goal.id}
+                          control={form.control}
+                          name={`goalVisibility.${goal.id}`}
+                          render={({ field }) => (
+                            <FormItem className="flex items-center justify-between rounded-lg border p-4">
+                              <div className="space-y-0.5">
+                                <FormLabel className="text-base">
+                                  {goal.name}
+                                </FormLabel>
+                                <FormDescription>
+                                  {goal.visible ? (
+                                    <span className="flex items-center text-muted-foreground">
+                                      <Eye className="mr-1 h-3 w-3" />
+                                      Visível no perfil
+                                    </span>
+                                  ) : (
+                                    <span className="flex items-center text-muted-foreground">
+                                      <EyeOff className="mr-1 h-3 w-3" />
+                                      Oculto no perfil
+                                    </span>
+                                  )}
+                                </FormDescription>
+                              </div>
+                              <FormControl>
+                                <Switch
+                                  checked={goal.visible}
+                                  onCheckedChange={(checked) => toggleGoalVisibility(goal.id, checked)}
                                 />
                               </FormControl>
                             </FormItem>
