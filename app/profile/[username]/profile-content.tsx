@@ -55,6 +55,7 @@ export default function ProfileContent({ params }: ProfileContentProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState<'addictions' | 'goals'>('addictions');
+  const [paymentButtonContainer, setPaymentButtonContainer] = useState<HTMLDivElement | null>(null);
   const router = useRouter();
   const { user } = useSupabaseAuth();
 
@@ -83,6 +84,24 @@ export default function ProfileContent({ params }: ProfileContentProps) {
       fetchPublicSupports();
     }
   }, [profile?.id]);
+
+  useEffect(() => {
+    // Create a hidden div for the payment button if it doesn't exist
+    if (!paymentButtonContainer) {
+      const container = document.createElement('div');
+      container.id = 'payment-button';
+      container.style.display = 'none';
+      document.body.appendChild(container);
+      setPaymentButtonContainer(container);
+    }
+
+    return () => {
+      // Clean up the payment button container when component unmounts
+      if (paymentButtonContainer) {
+        paymentButtonContainer.remove();
+      }
+    };
+  }, [paymentButtonContainer]);
 
   const handleShowAllSupports = () => {
     setShowAllSupports(true);

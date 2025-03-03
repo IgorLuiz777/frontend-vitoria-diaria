@@ -11,6 +11,7 @@ export interface SupportFormData {
   supporterName?: string;
   hideAmount: boolean;
   addictionId?: string;
+  goalId?: string;
 }
 
 export function useSupports() {
@@ -20,33 +21,99 @@ export function useSupports() {
     try {
       setLoading(true);
 
-      // Check if user is authenticated
-      const { data: { user } } = await supabase.auth.getUser();
+      // Create payment preference
+      const response = await fetch('/api/mercadopago/create-preference', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          amount: formData.amount,
+          supportData: formData,
+          recipientId
+        }),
+      });
 
-      const newSupport = {
-        supporter_id: user?.id || null,
-        recipient_id: recipientId,
-        addiction_id: formData.addictionId || null,
-        message: formData.message,
-        duration: parseInt(formData.duration),
-        amount: parseFloat(formData.amount),
-        supporter_name: formData.supporterName || null,
-        hide_amount: formData.hideAmount,
-        completed: false
-      };
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create payment');
+      }
 
-      const { data, error } = await supabase
-        .from('supports')
-        .insert(newSupport)
-        .select()
-        .single();
+      const { preferenceId, supportId } = await response.json();
 
-      if (error) throw error;
+      if (!preferenceId) {
+        throw new Error('No preference ID returned');
+      }
 
-      toast.success('Apoio enviado com sucesso!');
-      return data;
+      // Check if the MercadoPago script is already appended
+      if (!document.querySelector('script[src="https://sdk.mercadopago.com/js/v2"]')) {
+        const script = document.createElement('script');
+        script.src = 'https://sdk.mercadopago.com/js/v2';
+        script.type = 'text/javascript';
+        script.onload = () => {
+          // @ts-ignore
+          const mp = new MercadoPago(process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY, {
+            locale: 'pt-BR'
+          });
+
+          mp.checkout({
+            preference: {
+              id: preferenceId
+            },
+            render: {
+              container: '#payment-button',
+              label: 'Pagar',
+            }
+          });
+
+          // Automatically click the payment button
+          setTimeout(() => {
+            const paymentButton = document.querySelector('.mercadopago-button');
+            if (paymentButton) {
+              (paymentButton as HTMLElement).click();
+            }
+          }, 500);
+        };
+        document.body.appendChild(script);
+      } else {
+        // If script is already loaded, directly initialize the checkout
+        // @ts-ignore
+        const mp = new MercadoPago(process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY, {
+          locale: 'pt-BR'
+        });
+
+        mp.checkout({
+          preference: {
+            id: preferenceId
+          },
+          render: {
+            container: '#payment-button',
+            label: 'Pagar',
+          }
+        });
+
+        // Automatically click the payment button
+        setTimeout(() => {
+          const paymentButton = document.querySelector('.mercadopago-button');
+          if (paymentButton) {
+            (paymentButton as HTMLElement).click();
+          }
+        }, 500);
+      }
+
+      // Ensure the payment button container is created only once
+      if (!document.querySelector('#payment-button')) {
+        const paymentButton = document.createElement('div');
+        paymentButton.id = 'payment-button';
+        paymentButton.style.display = 'none';
+        document.body.appendChild(paymentButton);
+      }
+
+      toast.success('Redirecionando para o pagamento...');
+      return { supportId, preferenceId };
     } catch (err) {
-      toast.error('Erro ao enviar apoio');
+      console.error('Error creating support:', err);
+      toast.error('Erro ao processar pagamento');
       return null;
     } finally {
       setLoading(false);
@@ -153,9 +220,11 @@ export function usePublicSupports(userId: string) {
           hide_amount,
           completed,
           created_at,
+          payment_status,
           addiction:addictions!addiction_id(name, icon)
         `)
         .eq('recipient_id', userId)
+        .eq('payment_status', 'completed')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
