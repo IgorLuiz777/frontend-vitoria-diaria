@@ -55,6 +55,7 @@ export async function POST(request: NextRequest) {
     const preference = await createPreference({
       items: [
         {
+          id: supportRecord.id,
           title: `Apoio para ${recipient?.name || 'usuário'}`,
           quantity: 1,
           unit_price: parseFloat(amount),

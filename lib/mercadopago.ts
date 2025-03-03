@@ -7,6 +7,7 @@ const mercadoPagoClient = new MercadoPagoConfig({
 
 export interface CreatePreferenceParams {
   items: {
+    id: string;
     title: string;
     quantity: number;
     unit_price: number;
@@ -30,7 +31,7 @@ export interface CreatePreferenceParams {
 export async function createPreference(params: CreatePreferenceParams) {
   try {
     const preference = new Preference(mercadoPagoClient);
-    
+
     const preferenceData = {
       items: params.items,
       payer: params.payer,
